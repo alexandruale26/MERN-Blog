@@ -43,10 +43,16 @@ export const signin = async (req, res, next) => {
       return next(errorHandler(400, "Invalid credentials"));
     }
 
-    const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    // !!! This is the token lifespan
+    const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: "10h" });
     const { password: pass, ...rest } = validUser._doc;
 
-    res.status(200).cookie("access_token", token, { httpOnly: true }).json(rest);
+    // !!! MaxAge is for the browser to know how long it should store the token//
+    // It's not the token lifespan
+    res
+      .status(200)
+      .cookie("access_token", token, { httpOnly: true, maxAge: 10 * 60 * 60 * 1000 })
+      .json(rest);
   } catch (error) {
     next(error);
   }
