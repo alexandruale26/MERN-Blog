@@ -1,20 +1,108 @@
-import { Button, TextInput } from "flowbite-react";
+import { useRef, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { Alert, Button, TextInput } from "flowbite-react";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { app } from "../firebase";
+import { CircularProgressbar } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
 
 const DashProfile = () => {
   const { currentUser } = useSelector((state) => state.user);
+  const [imageFile, setImageFile] = useState(null);
+  const [imageFileUrl, setImageFileUrl] = useState(null);
+  const [imageFileUploadingProgress, setImageFileUploadingProgress] = useState(null);
+  const [imageFileUploadError, setImageFileUploadError] = useState(null);
+
+  const filePickerRef = useRef(null);
+
+  useEffect(() => {
+    if (imageFile) {
+      uploadImage();
+    }
+  }, [imageFile]);
+
+  const uploadImage = async () => {
+    setImageFileUploadError(null);
+
+    const storage = getStorage(app);
+    const fileName = new Date().getTime() + imageFile.name;
+    const storageRef = ref(storage, fileName);
+    const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        // clear error
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setImageFileUploadingProgress(progress.toFixed(0));
+      },
+      // !!! ERROR callback here
+      () => {
+        setImageFileUploadError("Could not upload image (File must be less than 2MB)");
+        setImageFileUploadingProgress(null);
+        setImageFile(null);
+        setImageFileUrl(null);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          // now the image url is directly from storage DB
+          setImageFileUrl(downloadURL);
+        });
+      }
+    );
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+
+    if (file) {
+      setImageFile(file);
+      // create a url for the image to be displayed right now, this is temporary
+      setImageFileUrl(URL.createObjectURL(file));
+    }
+  };
+
+  // !!! coolest trick ever by using ref
+  const handleImagePickerRef = () => filePickerRef.current.click();
 
   return (
     <div className="w-full max-w-lg p-3 mx-auto">
       <h1 className="my-7 text-center text-3xl font-semibold">Profile</h1>
       <form className="flex flex-col gap-4">
-        <div className="size-32 self-center cursor-pointer shadow-md rounded-full overflow-hidden">
+        <input type="file" accept="image/*" onChange={handleImageChange} ref={filePickerRef} hidden />
+
+        <div
+          className="relative size-32 self-center cursor-pointer shadow-md rounded-full overflow-hidden"
+          onClick={handleImagePickerRef}
+        >
+          {imageFileUploadingProgress && (
+            <CircularProgressbar
+              value={imageFileUploadingProgress}
+              text={`${imageFileUploadingProgress}%`}
+              strokeWidth={5}
+              styles={{
+                root: {
+                  width: "100%",
+                  height: "100%",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                },
+                path: {
+                  stroke: `rgba(62, 152, 199, ${imageFileUploadingProgress / 100})`,
+                },
+              }}
+            />
+          )}
           <img
-            src={currentUser.profilePicture}
+            src={imageFileUrl || currentUser.profilePicture}
             alt="user"
-            className="w-full h-full rounded-full object-cover border-8 border-[lightgray]"
+            className={`w-full h-full rounded-full object-cover border-8 border-[lightgray] ${
+              imageFileUploadingProgress && imageFileUploadingProgress < 100 && "opacity-60"
+            }`}
           />
         </div>
+        {imageFileUploadError && <Alert color="failure">{imageFileUploadError}</Alert>}
 
         <TextInput type="text" id="username" placeholder="username" defaultValue={currentUser.username} />
         <TextInput type="text" id="email" placeholder="email" defaultValue={currentUser.email} />
