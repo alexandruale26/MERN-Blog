@@ -51,7 +51,7 @@ export const signin = async (req, res, next) => {
     // It's not the token lifespan
     res
       .status(200)
-      .cookie("access_token", token, { httpOnly: true, maxAge: 10 * 60 * 60 * 1000 })
+      .cookie("access_token", token, { httpOnly: true, maxAge: 1000 * 60 * 60 * 1000 })
       .json(rest);
   } catch (error) {
     next(error);
