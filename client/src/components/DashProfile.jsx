@@ -10,6 +10,7 @@ import {
   deleteUserStart,
   deleteUserSuccess,
   deleteUserFailure,
+  signoutSuccess,
 } from "../redux/user/userSlice";
 import { useDispatch } from "react-redux";
 import { CircularProgressbar } from "react-circular-progressbar";
@@ -86,7 +87,7 @@ const DashProfile = () => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  // !!! WATCH OUT, FIELDS WILL NOT UPDATE THIS WAY. find another method
+  // !!! coolest trick ever for forms
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUpdateUserError(null);
@@ -145,6 +146,23 @@ const DashProfile = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      const res = await fetch("/api/user/signout", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.log(data.message);
+      } else {
+        dispatch(signoutSuccess());
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
   // !!! coolest trick ever by using ref
   const handleImagePickerRef = () => filePickerRef.current.click();
 
@@ -188,15 +206,21 @@ const DashProfile = () => {
         {imageFileUploadError && <Alert color="failure">{imageFileUploadError}</Alert>}
 
         <TextInput
-          onClick={handleChange}
+          onChange={handleChange}
           type="text"
           id="username"
           placeholder="username"
           defaultValue={currentUser.username}
         />
 
-        <TextInput onClick={handleChange} type="text" id="email" placeholder="email" defaultValue={currentUser.email} />
-        <TextInput onClick={handleChange} type="text" id="password" placeholder="password" />
+        <TextInput
+          onChange={handleChange}
+          type="text"
+          id="email"
+          placeholder="email"
+          defaultValue={currentUser.email}
+        />
+        <TextInput onChange={handleChange} type="text" id="password" placeholder="password" />
         <Button type="submit" gradientDuoTone="purpleToBlue" outline>
           Update
         </Button>
@@ -206,7 +230,9 @@ const DashProfile = () => {
         <span onClick={() => setShowModal(true)} className="cursor-pointer">
           Delete Account
         </span>
-        <span className="cursor-pointer">Sign Out</span>
+        <span onClick={handleSignOut} className="cursor-pointer">
+          Sign Out
+        </span>
       </div>
 
       {updateUserSuccess && (
