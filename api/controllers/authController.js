@@ -44,7 +44,9 @@ export const signin = async (req, res, next) => {
     }
 
     // !!! This is the token lifespan
-    const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: "10h" });
+    const token = jwt.sign({ id: validUser._id, isAdmin: validUser.isAdmin }, process.env.JWT_SECRET, {
+      expiresIn: "10h",
+    });
     const { password: pass, ...rest } = validUser._doc;
 
     // !!! MaxAge is for the browser to know how long it should store the token//
@@ -63,7 +65,7 @@ export const google = async (req, res, next) => {
 
   const user = await User.findOne({ email });
   if (user) {
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "10h" });
+    const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: "10h" });
     const { password, ...rest } = user._doc;
     console.log(user);
 
@@ -82,7 +84,7 @@ export const google = async (req, res, next) => {
     });
 
     await newUser.save();
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: "10h" });
+    const token = jwt.sign({ id: newUser._id, isAdmin: newUser.isAdmin }, process.env.JWT_SECRET, { expiresIn: "10h" });
     const { password, ...rest } = newUser._doc;
 
     res
