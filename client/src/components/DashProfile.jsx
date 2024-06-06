@@ -51,7 +51,6 @@ const DashProfile = () => {
     uploadTask.on(
       "state_changed",
       (snapshot) => {
-        // clear error
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setImageFileUploadingProgress(progress.toFixed(0));
       },
